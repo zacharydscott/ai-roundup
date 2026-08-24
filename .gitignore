@@ -1,0 +1,9 @@
+dist-newstyle/
+.direnv/
+result
+result-*
+*.hi
+*.o
+.env
+*.sqlite
+*.sqlite-journal

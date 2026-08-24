@@ -1,0 +1,6 @@
+-- Conspire is consumed from the working tree next door rather than from
+-- Hackage, the same way kudzu-agent does it: the library moves with this
+-- project, and a version bump should be visible here immediately rather than
+-- after a release.
+packages: .
+          ../conspire
