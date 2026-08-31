@@ -1,37 +1,42 @@
-# Cloudflare Pages configuration.
+# Cloudflare Workers Static Assets configuration.
 #
-# There is no build command and no deploy command on purpose. `ai-roundup site
-# build` (and every `run` / `apply`) writes finished HTML into pages/, that
-# directory is committed, and Cloudflare uploads it as-is. Cloudflare never
-# compiles Haskell, never installs a toolchain, and a deploy cannot fail in a
-# way a local build would not have caught first — what is in the repo is exactly
-# what is served.
+# There is no build step and no Worker code. `ai-roundup site build` (and every
+# `run` / `apply`) writes finished HTML into pages/, that directory is
+# committed, and `npx wrangler deploy` uploads it. Cloudflare never compiles
+# Haskell, never installs a toolchain, and a deploy cannot fail in a way a local
+# `site build` would not have caught first — what is in the repo is exactly what
+# is served.
 #
-# Dashboard settings that have to match, under Settings → Build:
+# __Why Workers and not Pages.__ The Git integration provisioned this repo as a
+# Workers Build: it defaults the deploy command to `npx wrangler deploy`, it
+# will not accept an empty deploy command, and the API token it injects into the
+# build environment is scoped for Workers. A `wrangler pages deploy` from that
+# environment fails with `Authentication error [code: 10000]` against
+# /pages/projects/ — the token cannot reach Pages at all. Rather than issue a
+# hand-made token with Pages:Edit and store it as a build variable to work
+# around the pipeline's own credentials, the config matches the pipeline.
 #
-#   Framework preset       None
-#   Build command          (empty)
-#   Deploy command         (empty)
-#   Build output directory pages
-#   Root directory         /
-#   Production branch      main
+# Dashboard settings this expects, under Settings → Build:
 #
-# The deploy command especially: a Pages project with `npx wrangler deploy` set
-# there runs the *Workers* deploy path against this file, which reads it under
-# Workers rules and fails. Pages uploads `pages_build_output_dir` natively and
-# needs no command to do it.
+#   Build command    (empty)
+#   Deploy command   npx wrangler deploy
+#   Root directory   /
+#
+# There is deliberately no `main` key. A Worker whose only content is static
+# assets needs no script, and adding one would put code in the request path of
+# every page for no reason.
 
 name = "ai-roundup"
-pages_build_output_dir = "pages"
+compatibility_date = "2026-08-28"
 
-# Deliberately no `[assets]` block. That table is Workers Static Assets
-# configuration — it requires a `directory`, and Pages does not read it. The two
-# behaviours it would have configured are Pages defaults already:
-#
-#   * Clean URLs: /roundups/2026-08-31 serves roundups/2026-08-31.html, so the
-#     addresses in a link or a mail carry no file extension.
-#   * 404s: an unmatched path is served pages/404.html, which the site generator
-#     writes and keeps current with the archive.
-#
-# If either ever needs overriding, Pages does it with _headers, _redirects and
-# _routes.json files inside pages/ — not with configuration here.
+[assets]
+directory = "./pages"
+
+# /roundups/2026-08-31 serves roundups/2026-08-31.html, so the addresses in a
+# link or a mail carry no file extension.
+html_handling = "auto-trailing-slash"
+
+# An unmatched path is served pages/404.html, which the site generator writes
+# and keeps current with the archive. Every wrong URL here is someone guessing
+# at a date, and that page answers the guess with the days that do exist.
+not_found_handling = "404-page"
