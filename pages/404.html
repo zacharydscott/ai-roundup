@@ -134,8 +134,14 @@ a:focus-visible {
 footer {
   margin-top: 3rem; padding-top: 1.25rem; border-top: 1px solid var(--rule);
   font-family: var(--mono); font-size: 0.7rem; color: var(--muted);
+  display: flex; flex-direction: column; gap: 0.9rem;
 }
 footer p { margin: 0; }
+.nav a {
+  font-size: 0.78rem; letter-spacing: 0.06em; text-transform: uppercase;
+  text-decoration: none;
+}
+.nav a:hover { text-decoration: underline; }
 @media (max-width: 46rem) {
   .story { grid-template-columns: 1fr; gap: 0; }
   .rank { text-align: left; padding: 0 0 0.35rem; font-size: 0.85rem; }
@@ -149,7 +155,7 @@ footer p { margin: 0; }
 </head>
 <body class="index">
 <main>
-<header class="masthead"><p class="eyebrow"><a href="/">AI Roundup</a><span class="stamp">404</span></p><h1>No roundup at that address.</h1><p class="tally">Roundups are filed one per day, at /roundups/YYYY-MM-DD.</p></header><ul class="archive"><li><a href="/roundups/2026-08-31.html"><span class="stamp">2026-08-31</span><span class="headline">GPT-5.6 available in Kiro, advancing price-performance for developers</span><span class="count">7 stories · 1 outlet</span></a></li></ul><footer><p>Compiled from feed and search coverage. Every claim links to the outlet that made it.</p></footer>
+<header class="masthead"><p class="eyebrow"><a href="/">AI Roundup</a><span class="stamp">404</span></p><h1>No roundup at that address.</h1><p class="tally">Roundups are filed one per day, at /roundups/YYYY-MM-DD.</p></header><ul class="archive"><li><a href="/roundups/2026-08-31.html"><span class="stamp">2026-08-31</span><span class="headline">GPT-5.6 available in Kiro, advancing price-performance for developers</span><span class="count">7 stories · 1 outlet</span></a></li></ul><footer><p class="nav"><a href="/archive.html">Every roundup →</a></p><p>Compiled from feed and search coverage. Every claim links to the outlet that made it.</p></footer>
 </main>
 </body>
 </html>

@@ -2,10 +2,23 @@
 
 -- | Wave 3: the corpus as pages.
 --
--- One page per digest under @pages\/roundups\/<date>.html@, plus an archive
--- index at @pages\/index.html@. @pages\/@ is the directory Cloudflare Pages is
--- pointed at (see @wrangler.toml@), so what this writes is what gets served,
--- with no build step in between.
+-- Four kinds of file under @pages\/@, which is the directory Cloudflare serves
+-- (see @wrangler.toml@), so what this writes is what gets served with no build
+-- step in between:
+--
+-- * @roundups\/<date>.html@ — one per digest, and the canonical address of a
+--   day. These are what a link or a mail points at, and they never move.
+-- * @index.html@ — the most recent day, written again at the root so that the
+--   bare domain lands on today's roundup rather than on a table of contents.
+--   A reader who types the domain wants the news, not a directory of it.
+-- * @archive.html@ — every day, newest first.
+-- * @404.html@ — named by @wrangler.toml@'s @not_found_handling@.
+--
+-- The root copy is a copy, not a redirect and not a symlink: a redirect costs a
+-- round trip on the page most people land on, and a symlink is a thing git,
+-- Cloudflare's build and Windows checkouts each treat differently. It declares
+-- the dated page as its canonical URL so the duplication does not read as two
+-- pages to anything that cares.
 --
 -- __Everything is inlined.__ No external stylesheet, no font CDN, no script.
 -- The pages are read by people skimming a briefing on a phone on Monday
@@ -32,8 +45,9 @@ module AI.Roundup.Site
   , writeRoundupPage
   , defaultPagesDir
     -- * Rendering (exposed for inspection and tests)
+  , Placement (..)
   , roundupHtml
-  , indexHtml
+  , archiveHtml
   ) where
 
 import AI.Roundup.Store
@@ -80,6 +94,24 @@ data PageStory = PageStory
   , psCoverage :: [ArticleRow]
   }
 
+-- | Where a page is being written, which is the only thing that differs between
+-- the two copies of the latest day.
+--
+-- It decides how sibling links resolve — @index.html@ sits beside @archive.html@
+-- while @roundups\/<date>.html@ is a directory below it — and which of the two
+-- claims to be canonical. Threading it through rather than rewriting hrefs
+-- afterwards keeps the relative paths correct by construction; a copy that got
+-- this wrong would show a page of links that all 404, and only from the root.
+data Placement
+  = AtRoot      -- ^ @pages\/index.html@: the latest day, canonical elsewhere
+  | InRoundups  -- ^ @pages\/roundups\/<date>.html@: the canonical address
+  deriving (Eq, Show)
+
+-- | The prefix that reaches @pages\/@ from a page's own directory.
+base :: Placement -> Text
+base AtRoot     = ""
+base InRoundups = "../"
+
 --------------------------------------------------------------------------------
 -- Writing
 --------------------------------------------------------------------------------
@@ -87,47 +119,58 @@ data PageStory = PageStory
 -- | Rebuild every page in the corpus. What @site build@ runs.
 writeRoundupPages :: Store -> FilePath -> IO [FilePath]
 writeRoundupPages store out = do
-  days <- digests store
+  days  <- digests store
   pages <- mapM (loadDigest store) days
-  paths <- mapM (writeOne out) pages
-  writeIndex out pages
-  pure (paths ++ [out </> "index.html"])
+  paths <- mapM (writeDay out) pages
+  shell <- writeShell out pages
+  pure (paths ++ shell)
 
--- | Rebuild one day, and the index that has to mention it.
+-- | Rebuild one day, and the three root files that have to agree with it.
 --
--- The index is rewritten rather than patched because it is a listing of every
--- day: a run that appended to it would drift from the corpus the first time a
--- digest was edited or a day rebuilt, and the file is tens of lines.
+-- The root files are rewritten rather than patched because each is a function
+-- of every day in the corpus: the archive lists them all, the 404 names the
+-- most recent, and @index.html@ /is/ the most recent. Appending to any of them
+-- would drift the first time a digest was edited or a day rebuilt, and together
+-- they are a few tens of lines.
 writeRoundupPage :: Store -> FilePath -> Text -> IO (Maybe FilePath)
 writeRoundupPage store out date = do
   mDigest <- digestForDate store date
   case mDigest of
     Nothing -> pure Nothing
     Just row -> do
-      page <- loadDigest store row
-      path <- writeOne out page
-      days <- digests store >>= mapM (loadDigest store)
-      writeIndex out days
+      page  <- loadDigest store row
+      path  <- writeDay out page
+      pages <- digests store >>= mapM (loadDigest store)
+      _     <- writeShell out pages
       pure (Just path)
 
-writeOne :: FilePath -> PageDigest -> IO FilePath
-writeOne out page = do
+writeDay :: FilePath -> PageDigest -> IO FilePath
+writeDay out page = do
   createDirectoryIfMissing True (out </> "roundups")
   let path = out </> "roundups" </> T.unpack (pdDate page) <.> "html"
-  TIO.writeFile path (roundupHtml page)
+  TIO.writeFile path (roundupHtml InRoundups page)
   pure path
 
--- | The archive, and the page Cloudflare serves for a path that is not a day.
+-- | The three files at the root: the latest day, the archive, and the 404.
 --
--- Both are written together because both are functions of the same list, and a
--- 404 that did not know which days exist would be a dead end rather than a
--- redirect a reader can act on. @wrangler.toml@ names @404.html@ directly, so
--- this file existing is part of that configuration being true.
-writeIndex :: FilePath -> [PageDigest] -> IO ()
-writeIndex out pages = do
+-- Written together because all three are functions of the same list and are
+-- only correct with respect to each other — an @index.html@ a day behind the
+-- archive it links to is worse than either being stale alone. @wrangler.toml@
+-- names @404.html@ directly, so this file existing is part of that
+-- configuration being true.
+--
+-- 'digests' orders newest first, so the latest day is the head. A corpus with
+-- no digests gets the archive's empty state at the root rather than a roundup
+-- of nothing: there is no latest day to show, and saying so is the honest page.
+writeShell :: FilePath -> [PageDigest] -> IO [FilePath]
+writeShell out pages = do
   createDirectoryIfMissing True out
-  TIO.writeFile (out </> "index.html") (indexHtml pages)
+  TIO.writeFile (out </> "archive.html") (archiveHtml pages)
   TIO.writeFile (out </> "404.html") (notFoundHtml pages)
+  TIO.writeFile (out </> "index.html") $ case pages of
+    (latest : _) -> roundupHtml AtRoot latest
+    []           -> archiveHtml []
+  pure [ out </> "index.html", out </> "archive.html", out </> "404.html" ]
 
 -- | Four queries into one value.
 --
@@ -170,20 +213,26 @@ loadStory store arts (rank, entry) = do
 -- One day's page
 --------------------------------------------------------------------------------
 
-roundupHtml :: PageDigest -> Text
-roundupHtml page = document title "day" body
+roundupHtml :: Placement -> PageDigest -> Text
+roundupHtml place page = document title "day" canonical body
   where
     title = "AI Roundup — " <> longDate (pdDate page)
+    -- Only the root copy declares one, and it points at the dated page. The
+    -- dated page is already at its own canonical address and saying so would
+    -- be noise.
+    canonical = case place of
+      AtRoot     -> Just ("/roundups/" <> pdDate page <> ".html")
+      InRoundups -> Nothing
     body = T.concat
       [ "<header class=\"masthead\">"
-      , "<p class=\"eyebrow\"><a href=\"../index.html\">AI Roundup</a>"
+      , "<p class=\"eyebrow\"><a href=\"", base place, "index.html\">AI Roundup</a>"
       , "<span class=\"stamp\">", esc (pdDate page), "</span></p>"
       , "<h1>", esc (longDate (pdDate page)), "</h1>"
       , "<p class=\"tally\">", esc (tally page), "</p>"
       , "</header>"
       , maybe "" (\i -> "<div class=\"intro\">" <> blocks i <> "</div>") (pdIntro page)
       , stories (pdStories page)
-      , footer
+      , footer (navLink (base place <> "archive.html") "Every roundup")
       ]
 
 -- | The day at a glance, in the mono voice: counts are facts about the corpus.
@@ -256,12 +305,14 @@ coverage arts = T.concat
 -- The archive index
 --------------------------------------------------------------------------------
 
-indexHtml :: [PageDigest] -> Text
-indexHtml pages = document "AI Roundup" "index" body
+-- | Every day, newest first. Served at @archive.html@, and at the root only
+-- when there is no latest day to put there.
+archiveHtml :: [PageDigest] -> Text
+archiveHtml pages = document "Every roundup — AI Roundup" "index" Nothing body
   where
     body = T.concat
       [ "<header class=\"masthead\">"
-      , "<p class=\"eyebrow\">AI Roundup"
+      , "<p class=\"eyebrow\"><a href=\"index.html\">AI Roundup</a>"
       , "<span class=\"stamp\">", esc (plural (length pages) "day" "days")
       , "</span></p>"
       , "<h1>What changed, and what it costs you.</h1>"
@@ -271,7 +322,7 @@ indexHtml pages = document "AI Roundup" "index" body
       , if null pages
           then "<p class=\"empty\">No roundups yet. The first run writes one.</p>"
           else "<ul class=\"archive\">" <> T.concat (map archiveRow pages) <> "</ul>"
-      , footer
+      , footer (if null pages then "" else navLink "index.html" "Latest roundup")
       ]
 
 archiveRow :: PageDigest -> Text
@@ -295,7 +346,7 @@ leadTitle page = case pdStories page of
 -- than apologising, because a reader who lands here guessed at a date and the
 -- dates that exist are the useful answer.
 notFoundHtml :: [PageDigest] -> Text
-notFoundHtml pages = document "Not a day we filed — AI Roundup" "index" body
+notFoundHtml pages = document "Not a day we filed — AI Roundup" "index" Nothing body
   where
     recent = take 5 pages
     body = T.concat
@@ -310,7 +361,7 @@ notFoundHtml pages = document "Not a day we filed — AI Roundup" "index" body
           then "<p class=\"empty\">Nothing has been filed yet.</p>"
           else "<ul class=\"archive\">"
                  <> T.concat (map archiveRowAbsolute recent) <> "</ul>"
-      , footer
+      , footer (navLink "/archive.html" "Every roundup")
       ]
 
 -- | The archive rows again, with root-relative hrefs. The 404 is served from
@@ -332,23 +383,33 @@ archiveRowAbsolute page = T.concat
 
 -- | The shell every page shares. @bodyClass@ distinguishes the archive from a
 -- day without a second stylesheet.
-document :: Text -> Text -> Text -> Text
-document title bodyClass body = T.concat
+document :: Text -> Text -> Maybe Text -> Text -> Text
+document title bodyClass canonical body = T.concat
   [ "<!doctype html>\n<html lang=\"en\">\n<head>\n"
   , "<meta charset=\"utf-8\">\n"
   , "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n"
   , "<title>", esc title, "</title>\n"
   , "<meta name=\"color-scheme\" content=\"light dark\">\n"
+  , maybe "" (\href -> "<link rel=\"canonical\" href=\"" <> esc href <> "\">\n")
+          canonical
   , "<style>\n", stylesheet, "</style>\n"
   , "</head>\n<body class=\"", esc bodyClass, "\">\n<main>\n"
   , body
   , "\n</main>\n</body>\n</html>\n"
   ]
 
-footer :: Text
-footer =
-  "<footer><p>Compiled from feed and search coverage. Every claim links to the \
-  \outlet that made it.</p></footer>"
+-- | The way off a page. The root is the latest day and carries no list of the
+-- others, so without this the archive is unreachable by clicking.
+navLink :: Text -> Text -> Text
+navLink href label =
+  "<p class=\"nav\"><a href=\"" <> esc href <> "\">" <> esc label <> " →</a></p>"
+
+footer :: Text -> Text
+footer nav = T.concat
+  [ "<footer>", nav
+  , "<p>Compiled from feed and search coverage. Every claim links to the \
+    \outlet that made it.</p></footer>"
+  ]
 
 -- | The whole visual system.
 --
@@ -497,8 +558,14 @@ stylesheet = T.unlines
   , "footer {"
   , "  margin-top: 3rem; padding-top: 1.25rem; border-top: 1px solid var(--rule);"
   , "  font-family: var(--mono); font-size: 0.7rem; color: var(--muted);"
+  , "  display: flex; flex-direction: column; gap: 0.9rem;"
   , "}"
   , "footer p { margin: 0; }"
+  , ".nav a {"
+  , "  font-size: 0.78rem; letter-spacing: 0.06em; text-transform: uppercase;"
+  , "  text-decoration: none;"
+  , "}"
+  , ".nav a:hover { text-decoration: underline; }"
     -- A hanging numeral needs a margin to hang in. Below this width there
     -- isn't one, so it folds above the headline and shrinks out of the way.
   , "@media (max-width: 46rem) {"
