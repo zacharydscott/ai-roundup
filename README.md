@@ -47,11 +47,18 @@ existed keeps its stored prose, and a page built from the change set would show
 prose that was discarded.
 
 `pages/` is committed, and Cloudflare Pages serves it directly with no build
-step (`wrangler.toml`): a push is a deploy. To connect it the first time, point
-Cloudflare at this repo with the framework preset set to **None** and the build
-command **empty** — `pages_build_output_dir` in `wrangler.toml` supplies the
-rest. Cloudflare never needs a Haskell toolchain, and a deploy cannot break in a
-way a local `site build` would not have caught.
+step (`wrangler.toml`): a push is a deploy. Cloudflare never needs a Haskell
+toolchain, and a deploy cannot break in a way a local `site build` would not
+have caught.
+
+Under **Settings → Build**, all three commands stay empty — framework preset
+**None**, build command **empty**, deploy command **empty** — with build output
+directory `pages` and root directory `/`. The deploy command is the one that
+matters and the one Cloudflare's onboarding is apt to fill in for you: a Pages
+project with `npx wrangler deploy` set there runs the *Workers* deploy path
+against `wrangler.toml`, reads it under Workers rules, and fails before
+uploading anything. Pages uploads `pages_build_output_dir` natively and needs no
+command to do it.
 
 The digest a page renders is the ranked one: `digest_entry.position` is the
 output of a model that compared every story of the day against every other, for

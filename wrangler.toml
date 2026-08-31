@@ -21,7 +21,7 @@
 # Workers rules and fails. Pages uploads `pages_build_output_dir` natively and
 # needs no command to do it.
 
-name = "ai-roundup"
+name = "ai-news"
 pages_build_output_dir = "pages"
 
 # Deliberately no `[assets]` block. That table is Workers Static Assets
