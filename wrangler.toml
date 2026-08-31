@@ -1,25 +1,37 @@
 # Cloudflare Pages configuration.
 #
-# There is no build command on purpose. `ai-roundup site build` (and every
-# `run` / `apply`) writes finished HTML into pages/, that directory is
-# committed, and Cloudflare serves it as-is. Cloudflare never compiles Haskell,
-# never installs a toolchain, and a deploy cannot fail in a way a local build
-# would not have caught first — what is in the repo is exactly what is served.
+# There is no build command and no deploy command on purpose. `ai-roundup site
+# build` (and every `run` / `apply`) writes finished HTML into pages/, that
+# directory is committed, and Cloudflare uploads it as-is. Cloudflare never
+# compiles Haskell, never installs a toolchain, and a deploy cannot fail in a
+# way a local build would not have caught first — what is in the repo is exactly
+# what is served.
 #
-# To connect this the first time: Cloudflare dashboard → Workers & Pages →
-# Create → Pages → Connect to Git → pick this repo. Leave the framework preset
-# as "None" and the build command empty; this file supplies the output
-# directory. Every push to the production branch then deploys.
+# Dashboard settings that have to match, under Settings → Build:
+#
+#   Framework preset       None
+#   Build command          (empty)
+#   Deploy command         (empty)
+#   Build output directory pages
+#   Root directory         /
+#   Production branch      main
+#
+# The deploy command especially: a Pages project with `npx wrangler deploy` set
+# there runs the *Workers* deploy path against this file, which reads it under
+# Workers rules and fails. Pages uploads `pages_build_output_dir` natively and
+# needs no command to do it.
 
 name = "ai-roundup"
-compatibility_date = "2026-08-31"
 pages_build_output_dir = "pages"
 
-# Static assets only. `html_handling` lets /roundups/2026-08-31 serve
-# roundups/2026-08-31.html, so the URLs in a link or a mail do not carry a file
-# extension. `not_found_handling` sends an unknown path to the archive rather
-# than to Cloudflare's default 404, because every wrong URL here is someone
-# guessing at a date and the archive is the answer to that guess.
-[assets]
-html_handling = "auto-trailing-slash"
-not_found_handling = "404-page"
+# Deliberately no `[assets]` block. That table is Workers Static Assets
+# configuration — it requires a `directory`, and Pages does not read it. The two
+# behaviours it would have configured are Pages defaults already:
+#
+#   * Clean URLs: /roundups/2026-08-31 serves roundups/2026-08-31.html, so the
+#     addresses in a link or a mail carry no file extension.
+#   * 404s: an unmatched path is served pages/404.html, which the site generator
+#     writes and keeps current with the archive.
+#
+# If either ever needs overriding, Pages does it with _headers, _redirects and
+# _routes.json files inside pages/ — not with configuration here.
