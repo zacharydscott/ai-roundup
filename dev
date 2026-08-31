@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Run a command inside the ai-roundup dev shell (the direnv flake profile).
+# The profile filename carries a hash and may change if the flake is rebuilt,
+# so resolve it dynamically. Usage: ./dev cabal build
+set -euo pipefail
+cd "$(dirname "$0")" || exit 1
+
+profile=$(ls .direnv/flake-profile-*.rc 2>/dev/null | head -n1)
+if [ -z "$profile" ]; then
+  echo "dev: no direnv flake profile found under .direnv/" >&2
+  echo "dev: run 'direnv allow' (or source .envrc) once to build it." >&2
+  exit 1
+fi
+
+# shellcheck disable=SC1090
+source "$profile"
+exec "$@"

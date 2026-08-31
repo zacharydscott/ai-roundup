@@ -7,3 +7,18 @@ result-*
 .env
 *.sqlite
 *.sqlite-journal
+# WAL mode leaves these beside the database between runs; they are the same
+# data mid-flight, not a second artefact worth keeping.
+*.sqlite-shm
+*.sqlite-wal
+
+# data/drafts/<date>/changes.json is deliberately NOT ignored: the change set is
+# the reviewable form of a run's output and is meant to be committed alongside
+# the corpus it produced.
+
+# pages/ is likewise NOT ignored, and for a stronger reason: Cloudflare Pages
+# serves that directory straight from the repo with no build step, so a push is
+# the deploy. Ignoring it would mean pushing a site with nothing in it.
+
+# Wrangler's local state. The config itself (wrangler.toml) is committed.
+.wrangler/

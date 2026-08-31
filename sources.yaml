@@ -1,0 +1,148 @@
+# What ai-roundup reads each run.
+#
+# Two lists: `feeds` (RSS or Atom, fetched and parsed directly) and `tavily`
+# (standing searches run through the Tavily MCP server). Both produce the same
+# thing — candidate articles — and both go through the same mechanical dedup.
+#
+# Every source needs an `id`. The id is written into `article.source_id` and is
+# how you answer "where did this come from" months later, so treat it as
+# permanent: change a URL or a query freely, but changing an id orphans the
+# provenance of everything already ingested under the old one.
+#
+# ORDER MATTERS. When two sources carry the same article, the first one listed
+# supplies the stored title, outlet and excerpt; the others are recorded as
+# additional sightings. List vendor blogs above aggregators so the canonical
+# headline wins over a submitter's paraphrase of it.
+#
+# feeds:
+#   id:     required, stable, kebab-case
+#   url:    required, the feed document (not the site)
+#   outlet: optional. Set it when the feed only ever carries one publisher's
+#           own writing; leave it out for aggregators, where the outlet is
+#           derived per item from the article's host.
+#
+# tavily:
+#   id:              required, stable
+#   query:           required, plain search text
+#   max_results:     optional, default 10
+#   time_range:      optional: day | week | month | year. A roundup wants
+#                    recent coverage; without this you get the all-time best
+#                    match, which is usually two years old.
+#   search_depth:    optional: basic | advanced | fast
+#   include_domains: optional allow-list of hosts
+#   exclude_domains: optional deny-list of hosts
+
+# How far back an article may be published and still count as news. A feed
+# carrying its whole archive is normal — openai.com's goes back to 2015 — and
+# nothing mechanical can tell that from a burst of real coverage, so without
+# this the first run treats a decade of posts as today's stories. Raise it
+# after an outage; remove it and you are backfilling, not running a roundup.
+max_age_days: 21
+
+feeds:
+  # Vendor blogs first: primary sources, exact titles, real publication dates.
+  - id: openai-news
+    url: https://openai.com/news/rss.xml
+    outlet: OpenAI
+
+  - id: google-deepmind-blog
+    url: https://deepmind.google/blog/rss.xml
+    outlet: Google DeepMind
+
+  - id: nvidia-news
+    url: https://nvidianews.nvidia.com/releases.xml
+    outlet: NVIDIA
+
+  # Anthropic, Meta, Microsoft, Mistral and xAI were all checked on 2026-08-30:
+  # 404 or 410 in every case. Qwen's blog is live but its newest post is from
+  # 2025-09. There is no vendor announcement feed to add for any of them, which
+  # is why the searches below matter more than they look.
+
+  # Then the press. All AI-specific sections, so most items are on-topic and
+  # triage is only doing edge cases.
+  - id: techcrunch-ai
+    url: https://techcrunch.com/category/artificial-intelligence/feed/
+    outlet: TechCrunch
+
+  - id: arstechnica-ai
+    url: https://arstechnica.com/ai/feed/
+    outlet: Ars Technica
+
+  - id: theverge-ai
+    url: https://www.theverge.com/rss/ai-artificial-intelligence/index.xml
+    outlet: The Verge
+
+  - id: techreview-ai
+    url: https://www.technologyreview.com/topic/artificial-intelligence/feed/
+    outlet: MIT Technology Review
+
+  - id: venturebeat-ai
+    url: https://venturebeat.com/category/ai/feed/
+    outlet: VentureBeat
+
+  # Individuals. Small feeds, unusually high signal, and the closest thing
+  # available to coverage of the labs with no feed of their own.
+  - id: simon-willison
+    url: https://simonwillison.net/atom/everything/
+    outlet: Simon Willison
+
+  - id: import-ai
+    url: https://jack-clark.net/feed/
+    outlet: Import AI
+
+  # Regulation. The corpus seeds a `regulation` category and had no feed
+  # feeding it. The EU one is topic-specific; the two government feeds are
+  # general press wires where most items have nothing to do with AI, and are
+  # here only because triage now spikes an off-topic item for the price of one
+  # short call.
+  - id: eu-ai-act
+    url: https://artificialintelligenceact.eu/feed/
+    outlet: EU AI Act Newsletter
+
+  # NOT added: the FTC press feed. It serves curl and answers 403 to this
+  # program — it appears to want a browser User-Agent specifically, and the one
+  # we send names the project honestly rather than impersonating Chrome. A
+  # source that fails on every run is worse than an absent one: it is noise in
+  # the failure report every day, and it counts towards the "every source
+  # failed" check that stops a run from recording an empty day. The regulation
+  # Tavily search covers the same ground.
+  #   - id: ftc-press
+  #     url: https://www.ftc.gov/feeds/press-release.xml
+
+  - id: nist-news
+    url: https://www.nist.gov/news-events/news/rss.xml
+    outlet: NIST
+
+  # Then the aggregators. They exist to catch what the vendor feeds and the
+  # trade press miss, and they are the reason dedup has to work: a popular
+  # vendor post shows up here linking to the exact URL the vendor feed already
+  # gave us, and the two must collapse into one article carried by two
+  # sources. No `outlet` — neither is the publisher.
+  - id: hn-ai
+    url: https://hnrss.org/newest?q=OpenAI+OR+Anthropic+OR+Gemini+OR+%22AI+model%22&count=40
+
+  - id: huggingface-blog
+    url: https://huggingface.co/blog/feed.xml
+
+  # NOT added: arXiv cs.AI. It returned 312 items in one day when checked, and
+  # unlike a blog archive they are all today's, so `max_age_days` removes none
+  # of them. That is 312 triage calls a day for preprints rather than news. If
+  # you want it, it is one entry — but put a keyword filter in front of it
+  # first, because this is the one feed where the free filters do nothing.
+  #   - id: arxiv-ai
+  #     url: http://export.arxiv.org/rss/cs.AI
+
+tavily:
+  # Searches cover the gap a fixed feed list cannot: a company with no feed, a
+  # regulator's press release, a story broken by an outlet nobody subscribed
+  # to. Keep them narrow and recent — every result is a candidate that costs
+  # tokens downstream.
+  - id: tavily-model-releases
+    query: new AI model release announcement from a major lab
+    max_results: 10
+    time_range: week
+
+  - id: tavily-ai-regulation
+    query: AI regulation, enforcement or government policy decision
+    max_results: 10
+    time_range: week

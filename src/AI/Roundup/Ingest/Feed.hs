@@ -9,8 +9,12 @@
 -- Everything it returns is optional, because every field it exposes is optional
 -- in at least one of those formats. 'FeedItem' resolves that once, here, so the
 -- rest of the program can assume an item has an identity and a title.
+--
+-- Transport only. Turning a 'FeedItem' into an "AI.Roundup.Ingest" candidate
+-- happens there, not here, so this module stays exercisable against a fixture
+-- and knows nothing about the corpus.
 
-module AI.Roundup.Feed
+module AI.Roundup.Ingest.Feed
   ( FeedItem (..)
   , fetchFeed
   , parseItems
@@ -21,7 +25,10 @@ import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime)
-import Network.HTTP.Client (Manager, httpLbs, parseRequest, responseBody, responseStatus)
+import Network.HTTP.Client
+       ( Manager, httpLbs, parseRequest, requestHeaders, responseBody
+       , responseStatus )
+import Network.HTTP.Types.Header (Header)
 import Network.HTTP.Types.Status (statusCode)
 import Text.Feed.Import (parseFeedSource)
 import Text.Feed.Query
@@ -51,12 +58,24 @@ data FeedItem = FeedItem
 -- for a program that does not exist yet.
 fetchFeed :: Manager -> Text -> IO (Either Text [FeedItem])
 fetchFeed manager url = do
-  request <- parseRequest (T.unpack url)
+  base <- parseRequest (T.unpack url)
+  let request = base { requestHeaders = userAgent : requestHeaders base }
   response <- httpLbs request manager
   let code = statusCode (responseStatus response)
   pure $ if code >= 200 && code < 300
     then parseItems url (responseBody response)
     else Left $ "HTTP " <> T.pack (show code) <> " from " <> url
+
+-- | Identify ourselves.
+--
+-- Not politeness: @http-client@ sends no @User-Agent@ at all by default, and
+-- several publishers reject that outright rather than serve it — Ars Technica
+-- answers 403 to a headerless request and 200 to the identical one with this
+-- set. A named agent also gives an operator whose feed we are hammering
+-- somebody to complain to, which is the reason it names the project rather
+-- than impersonating a browser.
+userAgent :: Header
+userAgent = ("User-Agent", "ai-roundup/0.1 (+https://github.com/zacharydscott/ai-roundup)")
 
 -- | Parse a feed document that has already been fetched.
 --

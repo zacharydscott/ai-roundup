@@ -1,0 +1,35 @@
+# A deliberately tiny source list for smoke-testing the pipeline end to end.
+#
+# ONE source, currently: enough candidates to exercise triage, grouping,
+# resolution, composition and the digest ranking, few enough that a whole run
+# is minutes and a mistake costs nothing. This file exists to be edited freely
+# — sources.yaml is the real list and should not be trimmed for testing.
+#
+#   ai-roundup --store smoke.sqlite run --draft --sources sources.smoke.yaml
+#
+# openai-news because it is the one feed guaranteed to carry several distinct
+# events in any given week, which is what makes grouping and the digest
+# ranking do visible work — a feed with one item exercises neither. Swap the
+# url below for another feed's to test that one instead; the id is what lands
+# in article.source_id, so change it to match.
+
+# Seven days, not the 21 sources.yaml uses. This is the knob that sets how long
+# a smoke run takes, because triage is one call per candidate: openai-news
+# carries ~43 items inside 21 days and ~13 inside 7. Raise it when you are
+# testing throughput, lower it when you are testing a code path.
+max_age_days: 7
+
+feeds:
+  - id: openai-news
+    url: https://openai.com/news/rss.xml
+    outlet: OpenAI
+
+# Commented out to keep this to a single source. Restore it to exercise the
+# Tavily MCP path — the tool call, the isError check, and the JSON-inside-a-
+# text-block unwrap — which no feed touches.
+#
+# tavily:
+#   - id: tavily-smoke
+#     query: new AI model release announcement from a major lab
+#     max_results: 3
+#     time_range: day

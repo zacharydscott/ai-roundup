@@ -94,7 +94,19 @@ article(id, story_id, url_canonical UNIQUE, url_original, title,
 digest(id, digest_date UNIQUE, intro_md)    -- digest_date IS discovery date
 digest_entry(digest_id, story_id, kind, delta_md, position)
                                             -- kind: 'breaking' | 'update'
+                                            -- position: rank, 1 = most important
+digest_article(digest_id, article_id)       -- the coverage the day gathered
+                                            -- UNIQUE (digest_id, article_id)
 ```
+
+`digest_entry` says which *stories* a day touched; `digest_article` says which
+*articles* arrived to touch them. The second is not derivable from the first,
+and not derivable from `article.fetched_at` either: fetched_at is when we first
+saw a URL, so an article fetched on one day can reach a digest on another, an
+article already in the corpus can be named again by later coverage, and a
+rebuilt corpus stamps every row with the day it was rebuilt. Written by
+`Apply.hs` from the article ids the story half of a change set actually stored,
+which is what stops a digest pointing at coverage that was never applied.
 
 `story_company` is a join table with `is_primary` because partnership
 announcements and multi-vendor regulation are genuinely multi-company, and
@@ -107,21 +119,31 @@ text, `digest_entry.delta_md` is what changed *that day*. That gives the
 
 ## Pipeline
 
-One run, five stages, each a function over the previous:
+> **Revised 2026-08-30 (phase 1.5).** The stage list below replaces the
+> original three-stage middle. What changed and why is in "Phase 1.5" at the
+> foot of this document; the sections between here and there describe the
+> shipped design except where they discuss `RunLedger`, per-candidate
+> resolution, or the `Ignore`/`Duplicate` verdicts, all of which are gone.
+
+One run, seven stages, each a function over the previous:
 
 ```
 1. collect    sources.yaml → [Candidate]
               RSS via existing fetchFeed; Tavily via MCP tools/call
 2. dedup      mechanical: canonical URL, guid, title  → [Candidate] (grouped)
-3. resolve    per candidate, oldest-published first:
-              sub-agent + search_stories/get_story  → Resolution
-4. compose    per touched story: rewrite writeup_md + delta_md
-              per run: digest intro                 → DayChangeSet
-5. apply      DayChangeSet → SQLite                 (the only writer)
+2b. known     drop candidates whose canonical URL is already stored (free)
+3. triage     fan-out, one short call per candidate:
+              Maybe CandidateSummary                  → [Triaged]
+4. group      one call over every summary at once     → [CandidateGroup]
+5. resolve    fan-out, per group: sub-agent +
+              search_stories/get_story                → Resolution
+6. compose    per touched story: rewrite writeup_md + delta_md
+              per run: digest intro                   → DayChangeSet
+7. apply      DayChangeSet → SQLite                   (the only writer)
 ```
 
 **`DayChangeSet` is the spine.** A typed record serialised with the same
-`JSONCodec` used for structured output, written to `drafts/<date>/changes.json`
+`JSONCodec` used for structured output, written to `data/drafts/<date>/changes.json`
 before stage 5. Phase 1 applies immediately; the future editor flow is then "skip
 stage 5" plus "apply this file", with no new write path.
 
@@ -140,7 +162,9 @@ than parsed out of prose.
 | `src/AI/Roundup/Ingest/Feed.hs` | existing `Feed.hs`, moved |
 | `src/AI/Roundup/Ingest/Tavily.hs` | MCP `tools/call` against the Tavily client |
 | `src/AI/Roundup/ChangeSet.hs` | `DayChangeSet` + codecs + JSON read/write |
-| `src/AI/Roundup/Resolve.hs` | resolver sub-agent, its two DB tools, `Resolution` |
+| `src/AI/Roundup/Triage.hs` | stage 3: relevance fan-out, `Maybe CandidateSummary` |
+| `src/AI/Roundup/Group.hs` | stage 4: the partition, `CandidateGroup` |
+| `src/AI/Roundup/Resolve.hs` | stage 5: per-group sub-agent, its two DB tools, `Resolution` |
 | `src/AI/Roundup/Compose.hs` | write-up and digest prose generation |
 | `src/AI/Roundup/Store.hs` | rewritten: schema, typed queries, aggregation reads |
 | `src/AI/Roundup/Apply.hs` | `applyChangeSet` — the only thing that writes |
@@ -178,7 +202,7 @@ ai-roundup site build                          phase 2, generate site/
 ai-roundup site deploy                         phase 2, BLOCKED on credentials
 ```
 
-`--draft` stops after writing `drafts/<date>/changes.json`. Reruns of the same day
+`--draft` stops after writing `data/drafts/<date>/changes.json`. Reruns of the same day
 are idempotent: `digest.digest_date` is unique, article canonical URLs are unique,
 and applying a changeset twice is a no-op.
 
@@ -277,7 +301,7 @@ tracking it in the database, where it would drift from what is actually on disk.
   door.
 - **Editor loop.** `--editor <date>` feeds notes plus the existing draft JSON back
   to the model for revision; `--publish <date>` applies it. Drafts live in
-  `drafts/<date>/`, in the repo, never web-facing. Nearly free once the ChangeSet
+  `data/drafts/<date>/`, in the repo, never web-facing. Nearly free once the ChangeSet
   spine exists.
 - **Schema migrations.** None in phase 1, by decision. The moment there is a
   corpus worth keeping, this needs a version table.
@@ -286,7 +310,7 @@ tracking it in the database, where it would drift from what is actually on disk.
 
 1. `cabal build` in the dev shell.
 2. `ai-roundup run --draft` against `sources.yaml` with 3–4 real AI feeds. Inspect
-   `drafts/<date>/changes.json` by hand — this is the artefact the whole design
+   `data/drafts/<date>/changes.json` by hand — this is the artefact the whole design
    rests on, and it should be readable without the schema in front of you.
 3. `ai-roundup apply <date>`, then check with `sqlite3`:
    - `story.start_date` equals the earliest article's `published_at`, and is
@@ -304,3 +328,86 @@ tracking it in the database, where it would drift from what is actually on disk.
    expected sets.
 8. `ai-roundup site build`, then serve `site/` locally and click through digest →
    story → related story. This is the last verifiable step before credentials.
+
+## Phase 1.5 — triage, grouping, and the death of the ledger
+
+Implemented 2026-08-30, after the first end-to-end run on live feeds.
+
+### What went wrong with the original middle
+
+Resolution ran one candidate at a time, sequentially, each a full sub-agent
+conversation with the corpus tools attached. Three consequences, all measured
+on a 122-candidate run:
+
+- **Irrelevant candidates cost full price.** "Not worth keeping" was a resolver
+  verdict, so a listicle bought a tool-equipped conversation before being
+  discarded. Relevance is the cheapest judgement in the pipeline and it was
+  being made at the most expensive stage.
+- **It was slow enough to look broken.** Forty minutes with no output, because
+  the stage emitted nothing until every candidate had finished.
+- **It could not be widened.** Every feed added multiplied cost linearly, which
+  ruled out exactly the feeds worth having: the ones that are mostly noise and
+  occasionally the only place a story broke.
+
+### The three changes
+
+**Triage (stage 3) returns `Maybe CandidateSummary`.** One short, tool-free,
+parallel call per candidate. `Nothing` means the candidate never reaches
+another stage. A `Maybe` rather than a verdict record with a boolean, because a
+record has to answer "what is the summary of a spiked candidate?" and every
+answer is a `Just ""` — the value that looks present and reads as missing,
+which `Ingest.nonEmpty` already exists to prevent. The wire shape keeps an
+explicit `relevant` boolean, because an omitted field is a weaker signal than a
+stated one for a small model; it collapses to `Maybe` at the codec boundary and
+never escapes the module.
+
+No reason string. It would be "not about AI" almost every time, and the
+question an operator actually has is not "why was this one dropped" but "is
+this feed pulling its weight". That is a per-source keep rate, printed from
+data we already hold locally at zero token cost.
+
+**Grouping (stage 4) sees every summary at once, and this deletes `RunLedger`.**
+The old design's most intricate machinery — a ledger threaded through the fold,
+a pending-stories list injected into every search result, a rule refusing a
+`new` verdict until a search had run, and a repeat of the pending list in each
+brief — were four mechanisms compensating for one fact: a candidate could not
+see its neighbours. A grouper that reads the whole batch makes two articles
+about one new story becoming two stories *unrepresentable*. All four went, and
+with them the `PendingStory` half of `StoryRef`.
+
+Nothing may be dropped in grouping. An index the model forgets, repeats, or
+puts out of range still lands in exactly one group — its own, if nothing else
+claims it. A malformed partition costs extra resolver calls and not one
+article.
+
+**Resolution (stage 5) runs per group, in parallel, with two outcomes.** Once
+the partition is fixed, groups are independent. `Ignore` moved to triage;
+`Duplicate` became a canonical-URL lookup costing nothing (stage 2b). What is
+left is the one question needing both the corpus and a judgement: has this
+event been written about before? The single shared resource is the slug
+namespace, de-conflicted after the fan-out rather than serialised through it.
+
+### Consequences
+
+- `newManager`'s second argument is a global in-flight cap enforced by a queue.
+  The fan-outs need no pool of their own; that number is the throttle.
+- Reasoning level is set per source in code via `modifyStandardConfig`, not on
+  the router. Router routes are shared with other programs, and a budget chosen
+  for a few hundred triage calls has no business changing what they get.
+- Sources widened from 4 feeds to 15. Anthropic, Meta, Microsoft, Mistral and
+  xAI have no working feed as of 2026-08-30 — all 404 or 410 — so vendor
+  coverage of those labs comes through the press, the individuals and the
+  searches.
+
+### Still open
+
+- **arXiv is excluded.** 312 items in a day, all of them today's, so
+  `max_age_days` removes none. It needs a mechanical keyword filter in front of
+  it before triage is asked to pay for it.
+- **The grouping call is single.** ~10k tokens for a few hundred summaries,
+  fine at either model's context. A batch large enough to need splitting would
+  also need a merge pass, and splitting it naively would reintroduce exactly
+  the blindness this stage removed.
+- **Composition still runs at low reasoning**, along with everything else. It
+  is ~20 calls a run rather than several hundred, so it is the cheapest place
+  to buy quality back if write-ups come out thin.

@@ -1,0 +1,48 @@
+{
+  "date": "2026-08-24",
+  "intro": "A new model release and new coverage of an existing regulation.",
+  "new_stories": [
+    {
+      "meta": {
+        "slug": "acme-releases-orbit-2",
+        "title": "Acme releases Orbit 2",
+        "category": "model",
+        "model_family": "acme-orbit",
+        "companies": [
+          { "name": "Acme", "primary": true }
+        ],
+        "start_date": "2026-08-18",
+        "start_basis": "stated_in_source"
+      },
+      "summary": "Acme shipped Orbit 2, its flagship model.",
+      "writeup": "Full write-up of the Orbit 2 release.",
+      "articles": [
+        {
+          "url_canonical": "https://acme.example.com/blog/orbit-2",
+          "url_original": "https://acme.example.com/blog/orbit-2?utm_source=x",
+          "title": "Announcing Orbit 2",
+          "outlet": "Acme Blog",
+          "source_id": "acme-blog",
+          "guid": "g-1",
+          "published_at": "2026-08-18T10:00:00Z",
+          "fetched_at": "2026-08-24T08:00:00Z",
+          "excerpt": "Orbit 2 is here."
+        }
+      ]
+    }
+  ],
+  "updates": [
+    {
+      "story_id": 7,
+      "slug": "eu-ai-act-roundup",
+      "delta_md": "New enforcement guidance published.",
+      "writeup": "Updated write-up.",
+      "summary": null,
+      "new_articles": []
+    }
+  ],
+  "digest_entries": [
+    { "slug": "acme-releases-orbit-2", "kind": "breaking", "delta_md": "Broke today.", "position": 1 },
+    { "slug": "eu-ai-act-roundup", "kind": "update", "delta_md": "Added coverage.", "position": 2 }
+  ]
+}

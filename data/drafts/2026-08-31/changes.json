@@ -1,0 +1,284 @@
+{
+  "date": "2026-08-31",
+  "digest_entries": [
+    {
+      "delta_md": "GPT-5.6 is now available in Kiro. OpenAI says it helps developers plan, build, review, and test software. The launch is framed as improving price-performance.",
+      "kind": "breaking",
+      "position": 1,
+      "slug": "gpt-5-6-available-in-kiro"
+    },
+    {
+      "delta_md": "OpenAI banned Russia-origin accounts using AI to promote a fake Israel-based think tank and a \"sovereignty\" index praising Russia and criticizing the West.",
+      "kind": "breaking",
+      "position": 2,
+      "slug": "openai-disrupts-russia-influence-campaign"
+    },
+    {
+      "delta_md": "OpenAI published first results for Jalapeño, its custom inference chip. OpenAI said it delivers faster, more power-efficient AI inference, with higher throughput and lower latency for modern models.",
+      "kind": "breaking",
+      "position": 3,
+      "slug": "openai-jalapeno-inference-chip"
+    },
+    {
+      "delta_md": "OpenAI published findings on the Hugging Face security incident. It said it is taking steps to strengthen AI model security, monitoring, and alignment.",
+      "kind": "breaking",
+      "position": 4,
+      "slug": "openai-hugging-face-incident-findings"
+    },
+    {
+      "delta_md": "OpenAI said ChatGPT for Teachers is expanding to 55 U.S. school systems. The expansion brings secure AI tools, training, and support to over 100,000 more educators and staff.",
+      "kind": "breaking",
+      "position": 5,
+      "slug": "chatgpt-for-teachers-more-us-districts"
+    },
+    {
+      "delta_md": "OpenAI said it is expanding its presence in Brazil and is deepening engagement with developers, businesses, and communities. OpenAI framed the expansion as support for AI adoption across the country.",
+      "kind": "breaking",
+      "position": 6,
+      "slug": "openai-brazil-expansion"
+    },
+    {
+      "delta_md": "OpenAI said it will wind down its contract providing OpenAI models to Cursor. OpenAI said the decision follows Cursor's acquisition by SpaceX.",
+      "kind": "breaking",
+      "position": 8,
+      "slug": "openai-cursor-contract-wind-down"
+    }
+  ],
+  "intro": null,
+  "new_stories": [
+    {
+      "articles": [
+        {
+          "excerpt": "GPT‑5.6 is now available in Kiro, helping developers plan, build, review, and test software with better price-performance.",
+          "fetched_at": "2026-08-31T02:21:24Z",
+          "guid": "https://openai.com/index/gpt-5-6-in-kiro",
+          "outlet": "OpenAI",
+          "published_at": "2026-08-24T12:00:00Z",
+          "source_id": "openai-news",
+          "title": "Advancing price-performance for developers with GPT‑5.6 in Kiro",
+          "url_canonical": "https://openai.com/index/gpt-5-6-in-kiro",
+          "url_original": "https://openai.com/index/gpt-5-6-in-kiro"
+        }
+      ],
+      "meta": {
+        "category": "model",
+        "companies": [
+          {
+            "name": "OpenAI",
+            "primary": true
+          },
+          {
+            "name": "Amazon",
+            "primary": false
+          }
+        ],
+        "model_family": "gpt-5-6",
+        "slug": "gpt-5-6-available-in-kiro",
+        "start_basis": "earliest_coverage",
+        "start_date": "2026-08-24T12:00:00Z",
+        "title": "GPT-5.6 available in Kiro, advancing price-performance for developers"
+      },
+      "summary": "OpenAI said GPT-5.6 is now available in Kiro, helping developers plan, build, review, and test software with better price-performance.",
+      "writeup": "OpenAI announced on August 24, 2026 that GPT-5.6 is now available in Kiro. The company said it helps developers plan, build, review, and test software with better price-performance."
+    },
+    {
+      "articles": [
+        {
+          "excerpt": "OpenAI banned Russia-origin accounts using AI to promote a fake Israel-based think tank and a “sovereignty” index praising Russia and criticizing the West.",
+          "fetched_at": "2026-08-31T02:21:24Z",
+          "guid": "https://openai.com/index/disrupting-malicious-uses-of-ai-influence-campaign-russia",
+          "outlet": "OpenAI",
+          "published_at": "2026-08-25T00:00:00Z",
+          "source_id": "openai-news",
+          "title": "Disrupting a new covert influence campaign from Russia",
+          "url_canonical": "https://openai.com/index/disrupting-malicious-uses-of-ai-influence-campaign-russia",
+          "url_original": "https://openai.com/index/disrupting-malicious-uses-of-ai-influence-campaign-russia"
+        }
+      ],
+      "meta": {
+        "category": "general_tech",
+        "companies": [
+          {
+            "name": "OpenAI",
+            "primary": true
+          }
+        ],
+        "model_family": null,
+        "slug": "openai-disrupts-russia-influence-campaign",
+        "start_basis": "earliest_coverage",
+        "start_date": "2026-08-25T00:00:00Z",
+        "title": "OpenAI disrupts new covert Russian influence campaign using its AI"
+      },
+      "summary": "OpenAI said it banned Russia-origin accounts that used AI to promote a fake Israel-based think tank and a \"sovereignty\" index praising Russia and criticizing the West.",
+      "writeup": "OpenAI said it banned Russia-origin accounts that used AI to promote a fake Israel-based think tank and a \"sovereignty\" index praising Russia and criticizing the West."
+    },
+    {
+      "articles": [
+        {
+          "excerpt": "Jalapeño is a custom inference chip from OpenAI that delivers faster, more power-efficient AI inference, with higher throughput and lower latency for modern models.",
+          "fetched_at": "2026-08-31T02:21:24Z",
+          "guid": "https://openai.com/index/jalapeno-first-results",
+          "outlet": "OpenAI",
+          "published_at": "2026-08-25T07:00:00Z",
+          "source_id": "openai-news",
+          "title": "Jalapeño’s first results show industry-leading speed and efficiency in AI inference",
+          "url_canonical": "https://openai.com/index/jalapeno-first-results",
+          "url_original": "https://openai.com/index/jalapeno-first-results"
+        }
+      ],
+      "meta": {
+        "category": "general_tech",
+        "companies": [
+          {
+            "name": "OpenAI",
+            "primary": true
+          }
+        ],
+        "model_family": null,
+        "slug": "openai-jalapeno-inference-chip",
+        "start_basis": "earliest_coverage",
+        "start_date": "2026-08-25T07:00:00Z",
+        "title": "Jalapeño's first results show industry-leading speed and efficiency in AI inference"
+      },
+      "summary": "OpenAI's post says first results for Jalapeño, its custom inference chip, show faster, more power-efficient AI inference, with higher throughput and lower latency for modern models.",
+      "writeup": "OpenAI's post on Jalapeño's first results says the chip is a custom inference chip that delivers faster, more power-efficient AI inference, with higher throughput and lower latency for modern models."
+    },
+    {
+      "articles": [
+        {
+          "excerpt": "OpenAI shares findings from the Hugging Face security incident and the steps we’re taking to strengthen AI model security, monitoring, and alignment.",
+          "fetched_at": "2026-08-31T02:21:24Z",
+          "guid": "https://openai.com/index/hugging-face-incident-and-the-road-ahead",
+          "outlet": "OpenAI",
+          "published_at": "2026-08-26T00:00:00Z",
+          "source_id": "openai-news",
+          "title": "The Hugging Face incident and the road ahead",
+          "url_canonical": "https://openai.com/index/hugging-face-incident-and-the-road-ahead",
+          "url_original": "https://openai.com/index/hugging-face-incident-and-the-road-ahead"
+        }
+      ],
+      "meta": {
+        "category": "model",
+        "companies": [
+          {
+            "name": "OpenAI",
+            "primary": true
+          },
+          {
+            "name": "Hugging Face",
+            "primary": false
+          }
+        ],
+        "model_family": null,
+        "slug": "openai-hugging-face-incident-findings",
+        "start_basis": "earliest_coverage",
+        "start_date": "2026-08-26T00:00:00Z",
+        "title": "OpenAI publishes findings on the Hugging Face security incident and steps for AI model security"
+      },
+      "summary": "OpenAI published findings on the Hugging Face security incident and outlined the steps it is taking to strengthen AI model security, monitoring, and alignment.",
+      "writeup": "OpenAI published a post titled “The Hugging Face incident and the road ahead.” It said the post shares findings from the Hugging Face security incident and the steps OpenAI is taking to strengthen AI model security, monitoring, and alignment. The post was dated 2026-08-26."
+    },
+    {
+      "articles": [
+        {
+          "excerpt": "ChatGPT for Teachers is expanding to 55 U.S. school systems, bringing secure AI tools, training, and support to over 100,000 more educators and staff.",
+          "fetched_at": "2026-08-31T02:21:24Z",
+          "guid": "https://openai.com/index/bringing-chatgpt-for-teachers-to-more-us-school-districts",
+          "outlet": "OpenAI",
+          "published_at": "2026-08-26T10:00:00Z",
+          "source_id": "openai-news",
+          "title": "Bringing ChatGPT for Teachers to more U.S. school districts",
+          "url_canonical": "https://openai.com/index/bringing-chatgpt-for-teachers-to-more-us-school-districts",
+          "url_original": "https://openai.com/index/bringing-chatgpt-for-teachers-to-more-us-school-districts"
+        }
+      ],
+      "meta": {
+        "category": "business",
+        "companies": [
+          {
+            "name": "OpenAI",
+            "primary": true
+          }
+        ],
+        "model_family": null,
+        "slug": "chatgpt-for-teachers-more-us-districts",
+        "start_basis": "earliest_coverage",
+        "start_date": "2026-08-26T10:00:00Z",
+        "title": "OpenAI brings ChatGPT for Teachers to more U.S. school districts"
+      },
+      "summary": "OpenAI said ChatGPT for Teachers is expanding to 55 U.S. school systems, bringing secure AI tools, training, and support to over 100,000 more educators and staff.",
+      "writeup": "OpenAI said ChatGPT for Teachers is expanding to 55 U.S. school systems. The expansion brings secure AI tools, training, and support to over 100,000 more educators and staff."
+    },
+    {
+      "articles": [
+        {
+          "excerpt": "OpenAI is expanding its presence in Brazil, deepening engagement with developers, businesses, and communities to support AI adoption across the country.",
+          "fetched_at": "2026-08-31T02:21:24Z",
+          "guid": "https://openai.com/index/expanding-our-presence-in-brazil",
+          "outlet": "OpenAI",
+          "published_at": "2026-08-27T03:00:00Z",
+          "source_id": "openai-news",
+          "title": "Expanding OpenAI’s presence in Brazil",
+          "url_canonical": "https://openai.com/index/expanding-our-presence-in-brazil",
+          "url_original": "https://openai.com/index/expanding-our-presence-in-brazil"
+        }
+      ],
+      "meta": {
+        "category": "business",
+        "companies": [
+          {
+            "name": "OpenAI",
+            "primary": true
+          }
+        ],
+        "model_family": null,
+        "slug": "openai-brazil-expansion",
+        "start_basis": "earliest_coverage",
+        "start_date": "2026-08-27T03:00:00Z",
+        "title": "OpenAI expands its presence in Brazil"
+      },
+      "summary": "OpenAI said on Aug. 27, 2026, that it is expanding its presence in Brazil, deepening engagement with developers, businesses, and communities to support AI adoption across the country.",
+      "writeup": "# OpenAI expands its presence in Brazil\n\nOn Aug. 27, 2026, OpenAI said it is expanding its presence in Brazil, deepening engagement with developers, businesses, and communities to support AI adoption across the country."
+    },
+    {
+      "articles": [
+        {
+          "excerpt": "Our decision to wind down our contract providing OpenAI models to Cursor following its acquisition by SpaceX.",
+          "fetched_at": "2026-08-31T02:21:24Z",
+          "guid": "https://openai.com/index/our-decision-on-cursor-following-its-acquisition-by-spacex",
+          "outlet": "OpenAI",
+          "published_at": "2026-08-28T06:00:00Z",
+          "source_id": "openai-news",
+          "title": "Our decision on Cursor following its acquisition by SpaceX",
+          "url_canonical": "https://openai.com/index/our-decision-on-cursor-following-its-acquisition-by-spacex",
+          "url_original": "https://openai.com/index/our-decision-on-cursor-following-its-acquisition-by-spacex"
+        }
+      ],
+      "meta": {
+        "category": "business",
+        "companies": [
+          {
+            "name": "OpenAI",
+            "primary": true
+          },
+          {
+            "name": "Cursor",
+            "primary": false
+          },
+          {
+            "name": "SpaceX",
+            "primary": false
+          }
+        ],
+        "model_family": null,
+        "slug": "openai-cursor-contract-wind-down",
+        "start_basis": "earliest_coverage",
+        "start_date": "2026-08-28T06:00:00Z",
+        "title": "OpenAI to wind down Cursor model contract following Cursor's acquisition by SpaceX"
+      },
+      "summary": "OpenAI said on Aug. 28, 2026, it will wind down its contract providing OpenAI models to Cursor following Cursor's acquisition by SpaceX.",
+      "writeup": "OpenAI said on Aug. 28, 2026, it will wind down its contract providing OpenAI models to Cursor following Cursor's acquisition by SpaceX."
+    }
+  ],
+  "updates": []
+}

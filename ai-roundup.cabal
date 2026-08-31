@@ -8,6 +8,11 @@ category:           application
 build-type:         Simple
 synopsis:           Feed-watching agent that summarises what is new
 extra-doc-files:    README.md
+-- schema.sql is read at compile time by Store.hs's file-embed splice, so a
+-- source distribution without it does not build. sources.yaml is the default
+-- the CLI looks for at run time.
+extra-source-files: schema.sql
+                    sources.yaml
 
 common warnings
     ghc-options: -Wall
@@ -20,14 +25,28 @@ executable ai-roundup
     import:           warnings
     main-is:          Main.hs
     hs-source-dirs:   src
-    other-modules:    AI.Roundup.Feed
+    other-modules:    AI.Roundup.Apply
+                    , AI.Roundup.ChangeSet
+                    , AI.Roundup.Compose
+                    , AI.Roundup.Config
+                    , AI.Roundup.Group
+                    , AI.Roundup.Ingest
+                    , AI.Roundup.Ingest.Feed
+                    , AI.Roundup.Ingest.Tavily
+                    , AI.Roundup.Resolve
+                    , AI.Roundup.Site
                     , AI.Roundup.Store
-                    , AI.Roundup.Summary
-    build-depends:    base >=4.14 && <5
+                    , AI.Roundup.Triage
+    build-depends:    base >=4.20 && <5
+                    , aeson
+                    , async
                     , bytestring
                     , conspire
                     , containers
+                    , directory
                     , feed
+                    , file-embed
+                    , filepath
                     , http-client
                     , http-client-tls
                     , http-types
@@ -36,5 +55,6 @@ executable ai-roundup
                     , sqlite-simple
                     , text
                     , time
+                    , yaml
     default-language: Haskell2010
     ghc-options:      -threaded -rtsopts "-with-rtsopts=-N"
